@@ -1,58 +1,98 @@
-import re
 import os
+import shutil
+import time
+import subprocess
+import ctypes
+import sys
+from app_main import client_name, New_Build_Source
 
-# Define the client name and site
-client_name = "Hallmark"  # This can be in any case (e.g., "hallmark", "HALLMARK", "Hallmark")
-client_site = f"https://{client_name}.nimbleproperty.net"
+client_path = fr"C:/Production1/{client_name}/Build"
 
-# Function to find the correct case of the client_name in the path
-def find_correct_case_path(base_path, client_name):
-    # Get the list of directories in the base path
-    if os.path.exists(base_path):
-        for dir_name in os.listdir(base_path):
-            # Compare case-insensitively
-            if dir_name.lower() == client_name.lower():
-                return os.path.join(base_path, dir_name)
-    raise FileNotFoundError(f"Directory for client '{client_name}' not found in '{base_path}'")
+def is_admin():
+    """Check if the script is running with administrative privileges."""
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
 
-# Define the base paths
-base_path = r"C:\Production2"
+def run_powershell_command(command):
+    """Run a PowerShell command and return the output."""
+    try:
+        result = subprocess.run(["powershell", "-Command", command], check=True, capture_output=True, text=True)
+        print(result.stdout)
+        if result.stderr:
+            print(f"Error: {result.stderr}")
+        return True
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to execute PowerShell command: {e.stderr}")
+        return False
 
-# Find the correct case of the client_name in the base path
-client_path = find_correct_case_path(base_path, client_name)
+def update_timestamp(path):
+    """Update the last modified timestamp of a file or folder."""
+    current_time = time.time()
+    os.utime(path, (current_time, current_time))
 
-# Define the paths to the OCR files using the correct case of client_name
-OCR_management = os.path.join(client_path, "Build", "OCR", "OCRManagement.js")
-OCR_mapping = os.path.join(client_path, "Build", "OCR", "OCRFiles", "Scripts", "Mapping.js")
+def clean_directory(client_path):
+    """Delete all folders and files in client_path except MailContent folder and Web.config file."""
+    if not os.path.exists(client_path):
+        print(f"The path {client_path} does not exist.")
+        return
+    for item in os.listdir(client_path):
+        item_path = os.path.join(client_path, item)
+        if item == "MailContent" or item == "Web.config":
+            print(f"Skipping {item}")
+            continue
+        try:
+            if os.path.isfile(item_path) or os.path.islink(item_path):
+                # Use PowerShell to forcefully delete the file
+                run_powershell_command(f"Remove-Item -Path '{item_path}' -Force")
+                print(f"Deleted file: {item}")
+            elif os.path.isdir(item_path):
+                # Use PowerShell to forcefully delete the folder
+                run_powershell_command(f"Remove-Item -Path '{item_path}' -Recurse -Force")
+                print(f"Deleted folder: {item}")
+        except Exception as e:
+            print(f"Failed to delete {item}. Reason: {e}")
 
-# Step 1: Replace the apiurl with the client_site (regardless of the current value)
-def replace_apiurl(content):
-    pattern = r"var apiurl = '[^']*';"
-    replacement = f"var apiurl = '{client_site}/OCRWEBAPI/api';"
-    return re.sub(pattern, replacement, content)
+def copy_except_excluded(New_Build_Source, client_path):
+    """Copy all folders and files from New_Build_Source to client_path except MailContent folder and Web.config file."""
+    if not os.path.exists(New_Build_Source):
+        print(f"Source path {New_Build_Source} does not exist.")
+        return
+    if not os.path.exists(client_path):
+        print(f"Destination path {client_path} does not exist.")
+        return
+    for item in os.listdir(New_Build_Source):
+        source_item_path = os.path.join(New_Build_Source, item)
+        destination_item_path = os.path.join(client_path, item)
+        if item == "MailContent" or item == "Web.config":
+            print(f"Skipping {item}")
+            continue
+        try:
+            if os.path.isfile(source_item_path):
+                shutil.copy2(source_item_path, destination_item_path)
+                print(f"Copied file: {item}")
+            elif os.path.isdir(source_item_path):
+                shutil.copytree(source_item_path, destination_item_path)
+                print(f"Copied folder: {item}")
+            update_timestamp(destination_item_path)
+            print(f"Updated timestamp for: {item}")
+        except Exception as e:
+            print(f"Failed to copy {item}. Reason: {e}")
 
-# Step 2: Replace the host with the client_site (regardless of the current value)
-def replace_host(content):
-    pattern = r"var host = '[^']*';"
-    replacement = f"var host = '{client_site}';"
-    return re.sub(pattern, replacement, content)
+# Main script
+if __name__ == "__main__":
+    # Check if the script is running as administrator
+    if not is_admin():
+        # Request admin privileges if not already running as admin
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
+    else:
+        # Step 1: Clean client_path
+        print("Step 1: Cleaning client_path...")
+        clean_directory(client_path)
 
-# Function to process a file
-def process_file(file_path):
-    # Read the content of the file
-    with open(file_path, 'r') as file:
-        content = file.read()
+        # Step 2: Copy from New_Build_Source to client_path
+        print("\nStep 2: Copying from New_Build_Source to client_path...")
+        copy_except_excluded(New_Build_Source, client_path)
 
-    # Perform the replacements
-    content = replace_apiurl(content)
-    content = replace_host(content)
-
-    # Write the modified content back to the file
-    with open(file_path, 'w') as file:
-        file.write(content)
-
-    print(f"File '{file_path}' has been updated successfully.")
-
-# Process both files
-process_file(OCR_management)
-process_file(OCR_mapping)
+        print("\nProcess completed!")

@@ -1,9 +1,8 @@
 import subprocess
 import ctypes
 import sys
+from app_main import client_name, site_name
 
-client_name = "Hallmark"
-site_name = client_name 
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
@@ -20,4 +19,4 @@ def stop_iis_site(site_name):
 if not is_admin():
     ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1)
 else:
-    stop_iis_site(site_name)  # Replace with your site name
+    stop_iis_site(site_name)
