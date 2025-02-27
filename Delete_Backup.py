@@ -1,7 +1,7 @@
 import os
 import glob
 import subprocess
-from app_main import client_name, WINRAR_PATH
+from app_main import client_name, WINRAR_PATH, base_path
 
 def delete_buildx_rar_files(folder_path):
     try:
@@ -46,5 +46,5 @@ def process_folder(folder_path):
         else:
             print("Build folder not found.")
 
-folder_path = fr"C:\Production2\{client_name}"
+folder_path = fr"{base_path}\{client_name}"
 process_folder(folder_path)

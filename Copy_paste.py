@@ -4,9 +4,9 @@ import time
 import subprocess
 import ctypes
 import sys
-from app_main import client_name, New_Build_Source
+from app_main import client_name, New_Build_Source, base_path
 
-client_path = fr"C:/Production2/{client_name}/Build"
+client_path = fr"{base_path}/{client_name}/Build"
 
 def is_admin():
     """Check if the script is running with administrative privileges."""
@@ -90,7 +90,7 @@ if __name__ == "__main__":
         # Step 1: Clean client_path
         print("Step 1: Cleaning client_path...")
         clean_directory(client_path)
-
+        time.sleep(5)
         # Step 2: Copy from New_Build_Source to client_path
         print("\nStep 2: Copying from New_Build_Source to client_path...")
         copy_except_excluded(New_Build_Source, client_path)

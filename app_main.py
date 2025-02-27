@@ -2,16 +2,16 @@ import subprocess
 import time
 
 # Common variables for all scripts
-client_name = "Hallmark"
-date = "28022025"
+client_name = "Hallmark"      #  Client name 
+date = "28022025"             # Today date
 app_pool_name = f"{client_name}_{date}"
 site_name = client_name
-application_name = "OCRWEBAPI"
+application_name = "OCRWEBAPI"    # application name under client site No need to change
 
 # Paths
 WINRAR_PATH = r"C:\Program Files\WinRAR\WinRAR.exe"
-New_Build_Source = r"C:/Production_release/NewBuild_13022025/NewBuild"
-base_path = r"C:\Production2"
+New_Build_Source = r"C:/Production_release/NewBuild_13022025/NewBuild"  #   change with New Build path
+base_path = r"C:\Production2"     # change with client base path from C drive 
 
 # List of scripts to execute in order
 scripts = [
@@ -47,11 +47,11 @@ def execute_scripts():
 
     # Step 2: Run Delete_Backup.py
     run_script(scripts[1])
-    time.sleep(10)  # 1.5-minute delay (90 seconds)
+    time.sleep(60)  # 1.5-minute delay (90 seconds)
 
     # Step 3: Run Copy_paste.py
     run_script(scripts[2])
-    time.sleep(10)  # 10-second delay
+    time.sleep(120)  # 10-second delay
 
     # Step 4: Run Dashboard.py
     run_script(scripts[3])
